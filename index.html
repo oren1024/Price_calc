@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Price per Kilo Comparator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f4f4f4;
+    }
+    h1 {
+      font-size: 1.4rem;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.4rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.3rem;
+      font-size: 0.9rem;
+    }
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      justify-content: center;
+    }
+    button {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      border: 1px solid #666;
+      background: #eee;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #ddd;
+    }
+    .best {
+      background-color: #d4edda !important;
+    }
+    .best-badge {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.7rem;
+      border-radius: 999px;
+      background: #28a745;
+      color: white;
+    }
+    .footer-note {
+      font-size: 0.75rem;
+      color: #666;
+      text-align: center;
+      margin-top: 0.7rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Price per Kilo Comparator</h1>
+    <div class="controls">
+      <button type="button" onclick="calculateAll()">Calculate</button>
+      <button type="button" onclick="clearAll()">Clear all</button>
+    </div>
+    <table id="productsTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product name</th>
+          <th>Weight (grams)</th>
+          <th>Price (ILS)</th>
+          <th>Price per kilo (ILS/kg)</th>
+          <th>Best</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 8 fixed rows -->
+        <script>
+          for (let i = 1; i <= 8; i++) {
+            document.write(
+              '<tr>' +
+                '<td>' + i + '</td>' +
+                '<td><input type="text" placeholder="Name"></td>' +
+                '<td><input type="number" min="0" step="1" placeholder="e.g. 500"></td>' +
+                '<td><input type="number" min="0" step="0.01" placeholder="e.g. 15"></td>' +
+                '<td class="ppk-cell"></td>' +
+                '<td class="best-cell"></td>' +
+              '</tr>'
+            );
+          }
+        </script>
+      </tbody>
+    </table>
+    <div class="footer-note">
+      Enter grams and price for each product, tap "Calculate", and the lowest ILS/kg will be highlighted.
+    </div>
+  </div>
+
+  <script>
+    function calculateAll() {
+      const table = document.getElementById('productsTable').tBodies[0];
+      const rows = Array.from(table.rows);
+
+      // First, clear previous results
+      rows.forEach(row => {
+        row.classList.remove('best');
+        row.querySelector('.ppk-cell').textContent = '';
+        row.querySelector('.best-cell').textContent = '';
+      });
+
+      // Compute price per kg for each valid row
+      let prices = []; // { index, ppk }
+      rows.forEach((row, index) => {
+        const gramsInput = row.cells[2].querySelector('input');
+        const priceInput = row.cells[3].querySelector('input');
+
+        const grams = parseFloat(gramsInput.value.replace(',', '.'));
+        const price = parseFloat(priceInput.value.replace(',', '.'));
+
+        if (!isNaN(grams) && grams > 0 && !isNaN(price) && price >= 0) {
+          const ppk = price / (grams / 1000);
+          prices.push({ index, ppk });
+          row.querySelector('.ppk-cell').textContent = ppk.toFixed(2);
+        }
+      });
+
+      if (prices.length === 0) {
+        return;
+      }
+
+      // Find minimum price per kg
+      let min = prices[0].ppk;
+      prices.forEach(p => {
+        if (p.ppk < min) min = p.ppk;
+      });
+
+      // Mark all rows that are equal to the minimum (allow ties)
+      prices.forEach(p => {
+        if (Math.abs(p.ppk - min) < 0.000001) {
+          const row = rows[p.index];
+          row.classList.add('best');
+          row.querySelector('.best-cell').innerHTML = '<span class="best-badge">BEST</span>';
+        }
+      });
+    }
+
+    function clearAll() {
+      const table = document.getElementById('productsTable').tBodies[0];
+      const rows = Array.from(table.rows);
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        inputs.forEach(input => input.value = '');
+        row.querySelector('.ppk-cell').textContent = '';
+        row.querySelector('.best-cell').textContent = '';
+        row.classList.remove('best');
+      });
+    }
+  </script>
+</body>
+</html>
